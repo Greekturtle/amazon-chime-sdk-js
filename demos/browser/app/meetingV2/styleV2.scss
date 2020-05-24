@@ -80,6 +80,12 @@ $close-text-shadow: none;
   }
 }
 
+body{
+  background-color: #ebeff1 !important ;
+  font-family: 'Roboto' Helvetica sans-serif;
+
+}
+
 .bg-dark {
   background-color: $success !important;
   &.navbar-dark .navbar-nav {
@@ -89,6 +95,11 @@ $close-text-shadow: none;
       color: $primary !important;
     }
   }
+}
+
+.bg-dark-blue{
+  background: #272930;
+
 }
 
 // Buttons =====================================================================
@@ -476,4 +487,26 @@ a.markdown:active {
   margin-right: 1rem;
   margin-top: 0.25rem;
   margin-bottom: 0.25rem;
+}
+
+
+.roboto {
+  font-family:'Roboto', Helvetica, sans-serif;
+}
+
+.list-group-item, .list-group.receive-message , .input-group.send-message .form-control {
+  background-color: #3d424e;
+  color: #e0e0e0;
+}
+
+.message-bubble-self{
+  background-color: #373b44;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #444952;
+  padding: 0.3rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  margin-top: 0rem;
+  margin-bottom: 0.5rem;
 }

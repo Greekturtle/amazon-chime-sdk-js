@@ -11,6 +11,7 @@ const app = process.env.npm_config_app || 'meetingV2';
 
 module.exports = env => {
   return {
+      watch: true,
     plugins: [
       new HtmlWebpackPlugin({
         inlineSource: '.(js|css)$',

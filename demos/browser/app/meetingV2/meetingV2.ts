@@ -174,6 +174,10 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
 
   initParameters(): void {
     const meeting = new URL(window.location.href).searchParams.get('m');
+      const username = new URL(window.location.href).searchParams.get('uname');
+      if (meeting && username) {
+          this.formSubmitHandler(null);
+      } else
     if (meeting) {
       (document.getElementById('inputMeeting') as HTMLInputElement).value = meeting;
       (document.getElementById('inputName') as HTMLInputElement).focus();
@@ -182,63 +186,70 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
     }
   }
 
+  formSubmitHandler = function(e : any){
+      {
+          if(e) {
+            e.preventDefault();
+
+          }
+          this.meeting = (document.getElementById('inputMeeting') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('m');
+          this.name = (document.getElementById('inputName') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('uname');;
+          this.region = (document.getElementById('inputRegion') as HTMLInputElement).value;
+          new AsyncScheduler().start(
+              async (): Promise<void> => {
+                  let chimeMeetingId: string = '';
+                  this.showProgress('progress-authenticate');
+                  try {
+                      chimeMeetingId = await this.authenticate();
+                  } catch (error) {
+                      (document.getElementById(
+                          'failed-meeting'
+                      ) as HTMLDivElement).innerText = `Meeting ID: ${this.meeting}`;
+                      (document.getElementById('failed-meeting-error') as HTMLDivElement).innerText =
+                          error.message;
+                      this.switchToFlow('flow-failed-meeting');
+                      return;
+                  }
+                  (document.getElementById(
+                      'meeting-id'
+                  ) as HTMLSpanElement).innerText = `${this.meeting} (${this.region})`;
+                  (document.getElementById(
+                      'chime-meeting-id'
+                  ) as HTMLSpanElement).innerText = `Meeting ID: ${chimeMeetingId}`;
+                  (document.getElementById(
+                      'mobile-chime-meeting-id'
+                  ) as HTMLSpanElement).innerText = `Meeting ID: ${chimeMeetingId}`;
+                  (document.getElementById(
+                      'mobile-attendee-id'
+                  ) as HTMLSpanElement).innerText = `Attendee ID: ${this.meetingSession.configuration.credentials.attendeeId}`;
+                  (document.getElementById(
+                      'desktop-attendee-id'
+                  ) as HTMLSpanElement).innerText = `Attendee ID: ${this.meetingSession.configuration.credentials.attendeeId}`;
+                  (document.getElementById('info-meeting') as HTMLSpanElement).innerText = this.meeting;
+                  (document.getElementById('info-name') as HTMLSpanElement).innerText = this.name;
+                  this.switchToFlow('flow-devices');
+                  await this.openAudioInputFromSelection();
+                  try {
+                      await this.openVideoInputFromSelection(
+                          (document.getElementById('video-input') as HTMLSelectElement).value,
+                          true
+                      );
+                  } catch (err) {
+                      this.log('no video input device selected');
+                  }
+                  await this.openAudioOutputFromSelection();
+                  this.hideProgress('progress-authenticate');
+              }
+          );
+      }
+    }
+
   initEventListeners(): void {
     window.addEventListener('resize', () => {
       this.layoutVideoTiles();
     });
 
-    document.getElementById('form-authenticate').addEventListener('submit', e => {
-      e.preventDefault();
-      this.meeting = (document.getElementById('inputMeeting') as HTMLInputElement).value;
-      this.name = (document.getElementById('inputName') as HTMLInputElement).value;
-      this.region = (document.getElementById('inputRegion') as HTMLInputElement).value;
-      new AsyncScheduler().start(
-        async (): Promise<void> => {
-          let chimeMeetingId: string = '';
-          this.showProgress('progress-authenticate');
-          try {
-            chimeMeetingId = await this.authenticate();
-          } catch (error) {
-            (document.getElementById(
-              'failed-meeting'
-            ) as HTMLDivElement).innerText = `Meeting ID: ${this.meeting}`;
-            (document.getElementById('failed-meeting-error') as HTMLDivElement).innerText =
-              error.message;
-            this.switchToFlow('flow-failed-meeting');
-            return;
-          }
-          (document.getElementById(
-            'meeting-id'
-          ) as HTMLSpanElement).innerText = `${this.meeting} (${this.region})`;
-          (document.getElementById(
-            'chime-meeting-id'
-          ) as HTMLSpanElement).innerText = `Meeting ID: ${chimeMeetingId}`;
-          (document.getElementById(
-            'mobile-chime-meeting-id'
-          ) as HTMLSpanElement).innerText = `Meeting ID: ${chimeMeetingId}`;
-          (document.getElementById(
-            'mobile-attendee-id'
-          ) as HTMLSpanElement).innerText = `Attendee ID: ${this.meetingSession.configuration.credentials.attendeeId}`;
-          (document.getElementById(
-            'desktop-attendee-id'
-          ) as HTMLSpanElement).innerText = `Attendee ID: ${this.meetingSession.configuration.credentials.attendeeId}`;
-          (document.getElementById('info-meeting') as HTMLSpanElement).innerText = this.meeting;
-          (document.getElementById('info-name') as HTMLSpanElement).innerText = this.name;
-          this.switchToFlow('flow-devices');
-          await this.openAudioInputFromSelection();
-          try {
-            await this.openVideoInputFromSelection(
-              (document.getElementById('video-input') as HTMLSelectElement).value,
-              true
-            );
-          } catch (err) {
-            this.log('no video input device selected');
-          }
-          await this.openAudioOutputFromSelection();
-          this.hideProgress('progress-authenticate');
-        }
-      );
-    });
+    document.getElementById('form-authenticate').addEventListener('submit', this.formSubmitHandler );
 
     document.getElementById('to-sip-flow').addEventListener('click', e => {
       e.preventDefault();
@@ -1257,6 +1268,14 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
     return (new URL(window.location.href).searchParams.get('record')) === 'true';
   }
 
+
+  autoauthenticate() : boolean {
+    //let name = (new URL(window.location.href).searchParams.get('uname'));
+
+    console.log('Auto auth');
+    return false;
+  }
+
   async authenticate(): Promise<string> {
     let joinInfo = (await this.joinMeeting()).JoinInfo;
     const configuration = new MeetingSessionConfiguration(joinInfo.Meeting, joinInfo.Attendee);
@@ -1424,6 +1443,8 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
     }
     return tiles;
   }
+
+
 
   layoutVideoTilesActiveSpeaker(visibleTileIndices: number[], activeTileId: number): void {
     const tileArea = document.getElementById('tile-area') as HTMLDivElement;
@@ -1611,5 +1632,7 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
 }
 
 window.addEventListener('load', () => {
-  new DemoMeetingApp();
+  const app = new DemoMeetingApp();
+  app.autoauthenticate();
+    console.log('loaded')
 });
