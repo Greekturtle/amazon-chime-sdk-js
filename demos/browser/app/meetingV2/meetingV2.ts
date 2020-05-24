@@ -268,6 +268,10 @@ export class DemoMeetingApp implements
 
   initParameters(): void {
     const meeting = new URL(window.location.href).searchParams.get('m');
+      const username = new URL(window.location.href).searchParams.get('uname');
+      if (meeting && username) {
+          this.formSubmitHandler(null);
+      } else
     if (meeting) {
       (document.getElementById('inputMeeting') as HTMLInputElement).value = meeting;
       (document.getElementById('inputName') as HTMLInputElement).focus();
@@ -310,77 +314,91 @@ export class DemoMeetingApp implements
     this.openAudioInputFromSelectionAndPreview();
   }
 
+  formSubmitHandler = function(e : any) {
+      {
+          if (e) {
+              e.preventDefault();
+
+          }
+          this.meeting = (document.getElementById('inputMeeting') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('m');
+          this.name = (document.getElementById('inputName') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('uname');
+          ;
+          this.region = (document.getElementById('inputRegion') as HTMLInputElement).value;
+
+          this.enableSimulcast = (document.getElementById('simulcast') as HTMLInputElement).checked;
+          if (this.enableSimulcast) {
+              const videoInputQuality = document.getElementById('video-input-quality') as HTMLSelectElement;
+              videoInputQuality.value = '720p';
+
+
+              this.enableWebAudio = (document.getElementById('webaudio') as HTMLInputElement).checked;
+              // js sdk default to enable unified plan, equivalent to "Disable Unified Plan" default unchecked
+              this.enableUnifiedPlanForChromiumBasedBrowsers = !(document.getElementById('planB') as HTMLInputElement).checked;
+
+              new AsyncScheduler().start(
+                  async (): Promise<void> => {
+                      let chimeMeetingId: string = '';
+                      this.showProgress('progress-authenticate');
+                      try {
+                          chimeMeetingId = await this.authenticate();
+                      } catch (error) {
+                          (document.getElementById(
+                              'failed-meeting'
+                          ) as HTMLDivElement).innerText = `Meeting ID: ${this.meeting}`;
+                          (document.getElementById('failed-meeting-error') as HTMLDivElement).innerText =
+                              error.message;
+                          this.switchToFlow('flow-failed-meeting');
+                          return;
+                      }
+                      (document.getElementById(
+                          'meeting-id'
+                      ) as HTMLSpanElement).innerText = `${this.meeting} (${this.region})`;
+                      (document.getElementById(
+                          'chime-meeting-id'
+                      ) as HTMLSpanElement).innerText = `Meeting ID: ${chimeMeetingId}`;
+                      (document.getElementById(
+                          'mobile-chime-meeting-id'
+                      ) as HTMLSpanElement).innerText = `Meeting ID: ${chimeMeetingId}`;
+                      (document.getElementById(
+                          'mobile-attendee-id'
+                      ) as HTMLSpanElement).innerText = `Attendee ID: ${this.meetingSession.configuration.credentials.attendeeId}`;
+                      (document.getElementById(
+                          'desktop-attendee-id'
+                      ) as HTMLSpanElement).innerText = `Attendee ID: ${this.meetingSession.configuration.credentials.attendeeId}`;
+                      (document.getElementById('info-meeting') as HTMLSpanElement).innerText = this.meeting;
+                      (document.getElementById('info-name') as HTMLSpanElement).innerText = this.name;
+
+                      await this.initVoiceFocus();
+
+                      this.switchToFlow('flow-devices');
+
+                      await this.openAudioInputFromSelectionAndPreview();
+
+                      //await this.openAudioInputFromSelection();
+                      try {
+                          await this.openVideoInputFromSelection(
+                              (document.getElementById('video-input') as HTMLSelectElement).value,
+                              true
+                          );
+                      } catch (err) {
+                          this.log('no video input device selected');
+                      }
+                      await this.openAudioOutputFromSelection();
+                      this.hideProgress('progress-authenticate');
+                  }
+              );
+          }
+      }
+  }
+
   initEventListeners(): void {
     if (!this.defaultBrowserBehaviour.hasChromiumWebRTC()) {
       (document.getElementById('simulcast') as HTMLInputElement).disabled = true;
       (document.getElementById('planB') as HTMLInputElement).disabled = true;
     }
 
-    document.getElementById('form-authenticate').addEventListener('submit', e => {
-      e.preventDefault();
-      this.meeting = (document.getElementById('inputMeeting') as HTMLInputElement).value;
-      this.name = (document.getElementById('inputName') as HTMLInputElement).value;
-      this.region = (document.getElementById('inputRegion') as HTMLInputElement).value;
-      this.enableSimulcast = (document.getElementById('simulcast') as HTMLInputElement).checked;
-      if (this.enableSimulcast) {
-        const videoInputQuality = document.getElementById('video-input-quality') as HTMLSelectElement;
-        videoInputQuality.value = '720p';
-      }
-      this.enableWebAudio = (document.getElementById('webaudio') as HTMLInputElement).checked;
-      // js sdk default to enable unified plan, equivalent to "Disable Unified Plan" default unchecked
-      this.enableUnifiedPlanForChromiumBasedBrowsers = !(document.getElementById('planB') as HTMLInputElement).checked;
-      new AsyncScheduler().start(
-        async (): Promise<void> => {
-          let chimeMeetingId: string = '';
-          this.showProgress('progress-authenticate');
-          try {
-            chimeMeetingId = await this.authenticate();
-          } catch (error) {
-            console.error(error);
-            const httpErrorMessage = 'UserMedia is not allowed in HTTP sites. Either use HTTPS or enable media capture on insecure sites.';
-            (document.getElementById(
-              'failed-meeting'
-            ) as HTMLDivElement).innerText = `Meeting ID: ${this.meeting}`;
-            (document.getElementById('failed-meeting-error') as HTMLDivElement).innerText =
-              window.location.protocol === 'http:' ? httpErrorMessage : error.message;
-            this.switchToFlow('flow-failed-meeting');
-            return;
-          }
-          (document.getElementById(
-            'meeting-id'
-          ) as HTMLSpanElement).innerText = `${this.meeting} (${this.region})`;
-          (document.getElementById(
-            'chime-meeting-id'
-          ) as HTMLSpanElement).innerText = `Meeting ID: ${chimeMeetingId}`;
-          (document.getElementById(
-            'mobile-chime-meeting-id'
-          ) as HTMLSpanElement).innerText = `Meeting ID: ${chimeMeetingId}`;
-          (document.getElementById(
-            'mobile-attendee-id'
-          ) as HTMLSpanElement).innerText = `Attendee ID: ${this.meetingSession.configuration.credentials.attendeeId}`;
-          (document.getElementById(
-            'desktop-attendee-id'
-          ) as HTMLSpanElement).innerText = `Attendee ID: ${this.meetingSession.configuration.credentials.attendeeId}`;
-          (document.getElementById('info-meeting') as HTMLSpanElement).innerText = this.meeting;
-          (document.getElementById('info-name') as HTMLSpanElement).innerText = this.name;
 
-          await this.initVoiceFocus();
-
-          this.switchToFlow('flow-devices');
-          await this.openAudioInputFromSelectionAndPreview();
-          try {
-            await this.openVideoInputFromSelection(
-              (document.getElementById('video-input') as HTMLSelectElement).value,
-              true
-            );
-          } catch (err) {
-            this.log('no video input device selected');
-          }
-          await this.openAudioOutputFromSelection();
-          this.hideProgress('progress-authenticate');
-        }
-      );
-    });
+    document.getElementById('form-authenticate').addEventListener('submit', this.formSubmitHandler );
 
     const speechMonoCheckbox = document.getElementById('fullband-speech-mono-quality') as HTMLInputElement;
     const musicMonoCheckbox = document.getElementById('fullband-music-mono-quality') as HTMLInputElement;
@@ -1840,7 +1858,13 @@ export class DemoMeetingApp implements
   }
 
   isBroadcaster(): boolean {
-    return (new URL(window.location.href).searchParams.get('broadcast')) === 'true';
+      return (new URL(window.location.href).searchParams.get('broadcast')) === 'true';
+  }
+
+  autoauthenticate() : boolean {
+    //let name = (new URL(window.location.href).searchParams.get('uname'));
+    console.log('Auto auth');
+    return false;
   }
 
   async authenticate(): Promise<string> {
@@ -2095,5 +2119,8 @@ export class DemoMeetingApp implements
 }
 
 window.addEventListener('load', () => {
-  new DemoMeetingApp();
+
+  const app = new DemoMeetingApp();
+  app.autoauthenticate();
+    console.log('loaded')
 });

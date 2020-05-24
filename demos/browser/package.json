@@ -8,6 +8,7 @@
     "build": "npm run deps && npm install && npm run build:fast",
     "start:fast": "npm run build:fast && node server.js",
     "start": "npm run deps && npm install && npm install aws-sdk && npm run start:fast"
+
   },
   "devDependencies": {
     "@types/jquery": "^3.5.1",
@@ -16,8 +17,14 @@
     "file-loader": "^6.1.0",
     "html-webpack-inline-source-plugin": "^0.0.10",
     "html-webpack-plugin": "^3.2.0",
+<<<<<<< HEAD
     "markdown-it": "^11.0.1",
     "node-sass": "^4.14.1",
+=======
+    "markdown-it": "^10.0.0",
+    "node-sass": "^4.12.0",
+    "nodemon": "^2.0.4",
+>>>>>>> added some styling
     "open-iconic": "^1.1.1",
     "postcss-loader": "^3.0.0",
     "precss": "^4.0.0",
@@ -32,11 +39,12 @@
   },
   "dependencies": {
     "amazon-chime-sdk-js": "file:../..",
-    "aws-sdk": "^2.791.0",
-    "bootstrap": "^4.5.2",
-    "compression": "^1.7.4",
-    "jquery": "^3.5.1",
     "lodash": "^4.17.20",
+    "aws-sdk": "^2.683.0",
+    "bootstrap": "^4.3.1",
+    "compression": "^1.7.4",
+    "jquery": "^3.4.1",
+    "npm-run-all": "^4.1.5",
     "popper.js": "^1.15.0"
   },
   "license": "Apache-2.0",
