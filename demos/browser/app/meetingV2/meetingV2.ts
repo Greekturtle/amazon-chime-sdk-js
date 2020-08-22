@@ -653,8 +653,9 @@ export class DemoMeetingApp implements
 
     const buttonMeetingEnd = document.getElementById('button-meeting-end');
     buttonMeetingEnd.addEventListener('click', _e => {
-      const confirmEnd = (new URL(window.location.href).searchParams.get('confirm-end')) === 'true';
-      const prompt = 'Are you sure you want to end the meeting for everyone? The meeting cannot be used after ending it.';
+      //const confirmEnd = (new URL(window.location.href).searchParams.get('confirm-end')) === 'true';
+        const confirmEnd = true;
+      const prompt = '[IMPORTANT] \n \n Are you sure you want to end the meeting for everyone? \n\n Once you end this meeting, no participant will be able to join again';
       if (confirmEnd && !window.confirm(prompt)) {
         return;
       }

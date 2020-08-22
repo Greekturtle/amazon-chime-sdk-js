@@ -83,8 +83,11 @@ $overlay-z-index: 10;
 
 body{
   background-color: #ebeff1 !important ;
-  font-family: 'Roboto' Helvetica sans-serif;
+  font-family: 'Roboto', Helvetica, sans-serif;
 
+}
+#flow-meeting{
+  background-color: #1d212b !important
 }
 
 .bg-dark {
@@ -524,7 +527,7 @@ a.markdown:active {
 
 .message-bubble-other {
   border-radius: 5px;
-  background-color: rgb(241, 241, 241);
+  background-color: #505a6b;
   border-style: none;
   padding: 0.3rem;
   margin-left: 1rem;

@@ -8,7 +8,6 @@
     "build": "npm run deps && npm install && npm run build:fast",
     "start:fast": "npm run build:fast && node server.js",
     "start": "npm run deps && npm install && npm install aws-sdk && npm run start:fast"
-
   },
   "devDependencies": {
     "@types/jquery": "^3.5.1",
