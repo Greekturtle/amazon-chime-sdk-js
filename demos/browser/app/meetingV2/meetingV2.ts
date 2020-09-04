@@ -1480,7 +1480,8 @@ export class DemoMeetingApp implements
 
   async populateVideoInputList(): Promise<void> {
     const genericName = 'Camera';
-    const additionalDevices = ['None', 'Blue', 'SMPTE Color Bars'];
+    //const additionalDevices = ['None', 'Blue', 'SMPTE Color Bars'];
+      const additionalDevices = ['None'];
     this.populateDeviceList(
       'video-input',
       genericName,
