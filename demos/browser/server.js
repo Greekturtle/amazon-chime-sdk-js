@@ -22,6 +22,7 @@ const indexPage = fs.readFileSync(`dist/${process.env.npm_config_app || 'meeting
 // the meeting is hosted in.
 const chime = new AWS.Chime({ region: 'us-east-1' });
 
+
 // Set the AWS SDK Chime endpoint. The global endpoint is https://service.chime.aws.amazon.com.
 chime.endpoint = new AWS.Endpoint(process.env.ENDPOINT || 'https://service.chime.aws.amazon.com');
 
