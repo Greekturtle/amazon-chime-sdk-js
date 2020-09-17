@@ -166,6 +166,7 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
         await this.join();
         this.displayButtonStates();
         this.switchToFlow('flow-meeting');
+        this.showMeetingInfoCard();
       });
     } else {
       this.switchToFlow('flow-authenticate');
@@ -195,6 +196,13 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
           this.meeting = (document.getElementById('inputMeeting') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('m');
           this.name = (document.getElementById('inputName') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('uname');;
           this.region = (document.getElementById('inputRegion') as HTMLInputElement).value;
+
+          let metadata = new URL(window.location.href).searchParams.get('uname');
+          if(metadata){
+              console.log(atob(metadata));
+              (document.getElementById('inputRegion') as HTMLInputElement).html = metadata;
+          }
+
           new AsyncScheduler().start(
               async (): Promise<void> => {
                   let chimeMeetingId: string = '';
@@ -249,7 +257,7 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
       this.layoutVideoTiles();
     });
 
-    document.getElementById('form-authenticate').addEventListener('submit', this.formSubmitHandler );
+    document.getElementById('form-authenticate').addEventListener('submit', e => this.formSubmitHandler(e) );
 
     document.getElementById('to-sip-flow').addEventListener('click', e => {
       e.preventDefault();
@@ -266,7 +274,7 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
       new AsyncScheduler().start(
         async (): Promise<void> => {
           this.showProgress('progress-authenticate');
-          const region = this.region || 'us-east-1';
+          const region = this.region || 'ap-south-1';
           try {
             const response = await fetch(
               `${DemoMeetingApp.BASE_URL}join?title=${encodeURIComponent(this.meeting)}&name=${encodeURIComponent(DemoMeetingApp.DID)}&region=${encodeURIComponent(region)}`,
@@ -561,6 +569,10 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
     return this.buttonStates[button];
   }
 
+  showMeetingInfoCard() : void {
+
+  }
+
   displayButtonStates(): void {
     for (const button in this.buttonStates) {
       const element = document.getElementById(button);
@@ -646,7 +658,7 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
   async initializeMeetingSession(configuration: MeetingSessionConfiguration): Promise<void> {
     let logger: Logger;
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-      logger = new ConsoleLogger('SDK', LogLevel.INFO);
+      logger = new ConsoleLogger('SDK', LogLevel.ERROR);
     } else {
       logger = new MeetingSessionPOSTLogger(
         'SDK',
