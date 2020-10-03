@@ -332,6 +332,8 @@ body {
   background-color: #f5f5f5;
 }
 
+
+
 svg {
   width: 20px;
   height: 20px;
@@ -352,4 +354,9 @@ svg {
 
 .progress-hidden {
   visibility: hidden;
+}
+
+
+.dropdown-toggle-no-caret::after{
+  display:none !important;
 }

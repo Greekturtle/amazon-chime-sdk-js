@@ -513,3 +513,7 @@ a.markdown:active {
   margin-top: 0rem;
   margin-bottom: 0.5rem;
 }
+
+.dropdown-toggle-no-caret::after{
+  display:none !important;
+}
