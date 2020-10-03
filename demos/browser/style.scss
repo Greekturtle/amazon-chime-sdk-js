@@ -332,6 +332,8 @@ body {
   background-color: #f5f5f5;
 }
 
+
+
 svg {
   width: 20px;
   height: 20px;
@@ -401,4 +403,9 @@ svg {
   #tile-container {
     height: auto !important;
   }
+}
+
+
+.dropdown-toggle-no-caret::after{
+  display:none !important;
 }

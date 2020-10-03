@@ -1010,10 +1010,42 @@ export class DemoMeetingApp implements
     this.initContentShareDropDownItems();
   }
 
+  setClickHandler(elementId: string, f: () => void): void {
+    document.getElementById(elementId).addEventListener('click', () => {
+      f();
+    });
+  }
+
+  duration:0;
+
+  resetDuration(): void{
+    this.duration = 0;
+  }
+
+  updateDuration(): void{
+    this.duration++;
+    let durationString = '-- : --';
+    if(this.duration > 3600) {
+      durationString = new Date(this.duration * 1000).toISOString().substr(11, 8);
+    }  else {
+        durationString =  new Date(this.duration * 1000).toISOString().substr(14, 5);
+    }
+      (document.getElementById('duration-display') as HTMLElement).innerText = durationString;
+
+  }
+
   async join(): Promise<void> {
     window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
       this.log(event.reason);
     });
+
+    this.resetDuration();
+    setInterval(() =>{
+        this.updateDuration();
+    },1000)
+     console.log('>>>>> Joining meeting now')
+    await this.openAudioInputFromSelection();
+    await this.openAudioOutputFromSelection();
     this.audioVideo.start();
   }
 
@@ -1050,6 +1082,7 @@ export class DemoMeetingApp implements
       li.className = 'list-group-item d-flex justify-content-between align-items-center';
       li.appendChild(document.createElement('span'));
       li.appendChild(document.createElement('span'));
+      li.appendChild(document.createElement('span'));
       roster.appendChild(li);
     }
     while (roster.getElementsByTagName('li').length > newRosterCount) {
@@ -1059,7 +1092,8 @@ export class DemoMeetingApp implements
     let i = 0;
     for (const attendeeId in this.roster) {
       const spanName = entries[i].getElementsByTagName('span')[0];
-      const spanStatus = entries[i].getElementsByTagName('span')[1];
+        const spanSignalStrength = entries[i].getElementsByTagName('span')[1];
+        const spanStatus = entries[i].getElementsByTagName('span')[2];
       let statusClass = 'badge badge-pill ';
       let statusText = '\xa0'; // &nbsp
       if (this.roster[attendeeId].signalStrength < 1) {
@@ -1075,9 +1109,15 @@ export class DemoMeetingApp implements
       } else if (this.roster[attendeeId].volume > 0) {
         statusClass += 'badge-success';
       }
+      //console.log('roster attendee',this.roster[attendeeId]);
       this.updateProperty(spanName, 'innerText', this.roster[attendeeId].name);
       this.updateProperty(spanStatus, 'innerText', statusText);
       this.updateProperty(spanStatus, 'className', statusClass);
+      if(this.isRecorder()){
+          this.updateProperty(spanSignalStrength, 'innerText', this.roster[attendeeId].signalStrength);
+          this.updateProperty(spanSignalStrength, 'className', 'small');
+      }
+
       i++;
     }
   }
@@ -1241,6 +1281,9 @@ export class DemoMeetingApp implements
 
   // eslint-disable-next-line
   async joinMeeting(): Promise<any> {
+      //this.region = this.region || 'ap-south-1';
+      //Force the region as ap-south-1
+      this.region = 'ap-south-1';
     const response = await fetch(
       `${DemoMeetingApp.BASE_URL}join?title=${encodeURIComponent(this.meeting)}&name=${encodeURIComponent(this.name)}&region=${encodeURIComponent(this.region)}`,
       {
