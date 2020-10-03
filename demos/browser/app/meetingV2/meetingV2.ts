@@ -660,14 +660,17 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       logger = new ConsoleLogger('SDK', LogLevel.ERROR);
     } else {
-      logger = new MeetingSessionPOSTLogger(
-        'SDK',
-        configuration,
-        DemoMeetingApp.LOGGER_BATCH_SIZE,
-        DemoMeetingApp.LOGGER_INTERVAL_MS,
-        `${DemoMeetingApp.BASE_URL}logs`,
-        LogLevel.INFO
-      );
+
+        logger = new ConsoleLogger('SDK', LogLevel.INFO);
+
+      // logger = new MeetingSessionPOSTLogger(
+      //   'SDK',
+      //   configuration,
+      //   DemoMeetingApp.LOGGER_BATCH_SIZE,
+      //   DemoMeetingApp.LOGGER_INTERVAL_MS,
+      //   `${DemoMeetingApp.BASE_URL}logs`,
+      //   LogLevel.INFO
+      // );
     }
     const deviceController = new DefaultDeviceController(logger);
     configuration.enableWebAudio = this.enableWebAudio;
