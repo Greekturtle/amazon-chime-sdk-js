@@ -281,30 +281,12 @@ export class DemoMeetingApp implements
     }
   }
 
-<<<<<<< HEAD
   async initVoiceFocus(): Promise<void> {
     const logger = new ConsoleLogger('SDK', LogLevel.DEBUG);
     if (!this.enableWebAudio) {
       logger.info('[DEMO] Web Audio not enabled. Not checking for Amazon Voice Focus support.');
       return;
     }
-=======
-  formSubmitHandler = function(e : any){
-      {
-          if(e) {
-            e.preventDefault();
-
-          }
-          this.meeting = (document.getElementById('inputMeeting') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('m');
-          this.name = (document.getElementById('inputName') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('uname');;
-          this.region = (document.getElementById('inputRegion') as HTMLInputElement).value;
-
-          let metadata = new URL(window.location.href).searchParams.get('md');
-          if(metadata){
-              console.log(atob(metadata));
-              //(document.getElementById('inputRegion') as HTMLInputElement).html = metadata;
-          }
->>>>>>> tweaks
 
     try {
       this.supportsVoiceFocus = await VoiceFocusDeviceTransformer.isSupported(VOICE_FOCUS_SPEC, { logger });
@@ -977,26 +959,11 @@ export class DemoMeetingApp implements
   async initializeMeetingSession(configuration: MeetingSessionConfiguration): Promise<void> {
     let logger: Logger;
     const logLevel = LogLevel.INFO;
-    const consoleLogger = logger = new ConsoleLogger('SDK', logLevel);
+    //const consoleLogger = logger = new ConsoleLogger('SDK', logLevel);
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
       logger = new ConsoleLogger('SDK', LogLevel.ERROR);
     } else {
-      await Promise.all([
-        this.createLogStream(configuration, 'create_log_stream'),
-        this.createLogStream(configuration, 'create_browser_event_log_stream')
-      ]);
 
-      logger = new MultiLogger(
-        consoleLogger,
-        new MeetingSessionPOSTLogger(
-          'SDK',
-          configuration,
-          DemoMeetingApp.LOGGER_BATCH_SIZE,
-          DemoMeetingApp.LOGGER_INTERVAL_MS,
-          `${DemoMeetingApp.BASE_URL}logs`,
-          logLevel
-        ),
-      );
       this.meetingEventPOSTLogger = new MeetingSessionPOSTLogger(
         'SDKEvent',
         configuration,
@@ -1005,6 +972,17 @@ export class DemoMeetingApp implements
         `${DemoMeetingApp.BASE_URL}log_meeting_event`,
         logLevel
       );
+
+        logger = new ConsoleLogger('SDK', LogLevel.INFO);
+
+      // logger = new MeetingSessionPOSTLogger(
+      //   'SDK',
+      //   configuration,
+      //   DemoMeetingApp.LOGGER_BATCH_SIZE,
+      //   DemoMeetingApp.LOGGER_INTERVAL_MS,
+      //   `${DemoMeetingApp.BASE_URL}logs`,
+      //   LogLevel.INFO
+      // );
     }
     const deviceController = new DefaultDeviceController(logger, { enableWebAudio: this.enableWebAudio });
     configuration.enableUnifiedPlanForChromiumBasedBrowsers = this.enableUnifiedPlanForChromiumBasedBrowsers;
