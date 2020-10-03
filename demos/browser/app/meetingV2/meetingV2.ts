@@ -197,7 +197,7 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
           this.name = (document.getElementById('inputName') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('uname');;
           this.region = (document.getElementById('inputRegion') as HTMLInputElement).value;
 
-          let metadata = new URL(window.location.href).searchParams.get('uname');
+          let metadata = new URL(window.location.href).searchParams.get('md');
           if(metadata){
               console.log(atob(metadata));
               //(document.getElementById('inputRegion') as HTMLInputElement).html = metadata;

@@ -19,7 +19,15 @@ const loggerFormat = printf(({level, message, label, timestamp}) => {
 
 var transport = new transports.DailyRotateFile({
     filename: 'logs/oculus-%DATE%.log',
-    datePattern: 'YYYY-MM-DD-HH',
+    datePattern: 'YYYY-MM-DD',
+    zippedArchive: true,
+    maxSize: '20m',
+    maxFiles: '14d'
+});
+
+var meetingDataLogTransport = new transports.DailyRotateFile({
+    filename: 'logs/oculus-%DATE%.log',
+    datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
     maxSize: '20m',
     maxFiles: '14d'
@@ -30,6 +38,15 @@ transport.on('rotate', function (oldFilename, newFilename) {
 });
 
 const metricsLogger = createLogger({
+    format: combine(
+        label({label: 'performance'}),
+        timestamp(),
+        loggerFormat
+    ),
+    transports: [transport]
+});
+
+const meetingDataLogger = createLogger({
     format: combine(
         label({label: 'performance'}),
         timestamp(),
@@ -147,7 +164,7 @@ http.createServer({}, async (request, response) => {
     msg+= '0.0.0.0,';
     msg+= 'NA,';
     msg+= 'NA,';
-    msg+= 'NA,';
+    msg+= 'NA';
     metricsLogger.info(msg);
 
 
