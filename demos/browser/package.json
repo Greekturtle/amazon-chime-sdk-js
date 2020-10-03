@@ -34,7 +34,7 @@
   "dependencies": {
     "amazon-chime-sdk-js": "file:../..",
     "lodash": "^4.17.20",
-    "aws-sdk": "^2.752.0",
+    "aws-sdk": "^2.766.0",
     "bootstrap": "^4.3.1",
     "compression": "^1.7.4",
     "jquery": "^3.4.1",

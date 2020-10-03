@@ -281,12 +281,30 @@ export class DemoMeetingApp implements
     }
   }
 
+<<<<<<< HEAD
   async initVoiceFocus(): Promise<void> {
     const logger = new ConsoleLogger('SDK', LogLevel.DEBUG);
     if (!this.enableWebAudio) {
       logger.info('[DEMO] Web Audio not enabled. Not checking for Amazon Voice Focus support.');
       return;
     }
+=======
+  formSubmitHandler = function(e : any){
+      {
+          if(e) {
+            e.preventDefault();
+
+          }
+          this.meeting = (document.getElementById('inputMeeting') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('m');
+          this.name = (document.getElementById('inputName') as HTMLInputElement).value || new URL(window.location.href).searchParams.get('uname');;
+          this.region = (document.getElementById('inputRegion') as HTMLInputElement).value;
+
+          let metadata = new URL(window.location.href).searchParams.get('md');
+          if(metadata){
+              console.log(atob(metadata));
+              //(document.getElementById('inputRegion') as HTMLInputElement).html = metadata;
+          }
+>>>>>>> tweaks
 
     try {
       this.supportsVoiceFocus = await VoiceFocusDeviceTransformer.isSupported(VOICE_FOCUS_SPEC, { logger });
