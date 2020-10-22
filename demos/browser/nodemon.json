@@ -1,0 +1,6 @@
+{
+  "verbose": true,
+  "ignore": ["*.test.js", "fixtures/*", "dist/*"],
+  "delay" : 2500,
+  "ext" : "js,ts,scss,html"
+}

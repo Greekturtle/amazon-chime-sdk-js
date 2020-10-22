@@ -23,7 +23,7 @@ import {
   Logger,
   MeetingSession,
   MeetingSessionConfiguration,
-  MeetingSessionPOSTLogger,
+//  MeetingSessionPOSTLogger,
   MeetingSessionStatus,
   MeetingSessionStatusCode,
   MeetingSessionVideoAvailability,
@@ -107,6 +107,7 @@ export enum ContentShareType {
 export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver, ContentShareObserver {
   static readonly DID: string = '+17035550122';
   static readonly BASE_URL: string = [location.protocol, '//', location.host, location.pathname.replace(/\/*$/, '/').replace('/v2', '')].join('');
+    static readonly SS_CORE_BASE_URL: string = [location.protocol, '//',location.host,'/tnpsuite-core/oculus/meetings/'].join('');
   static testVideo: string = 'https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Big_Buck_Bunny_4K.webm/Big_Buck_Bunny_4K.webm.360p.vp9.webm';
   static readonly LOGGER_BATCH_SIZE: number = 85;
   static readonly LOGGER_INTERVAL_MS: number = 1150;
@@ -128,6 +129,8 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
   roster: any = {};
   tileIndexToTileId: { [id: number]: number } = {};
   tileIdToTileIndex: { [id: number]: number } = {};
+
+  meetingMetadata:{ data : any | null};
 
   cameraDeviceIds: string[] = [];
   microphoneDeviceIds: string[] = [];
@@ -199,9 +202,18 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
 
           let metadata = new URL(window.location.href).searchParams.get('md');
           if(metadata){
-              console.log(atob(metadata));
-              //(document.getElementById('inputRegion') as HTMLInputElement).html = metadata;
+
+            try {
+                this.meetingMetadata = {data : <any> null};
+                this.meetingMetadata.data = JSON.parse(atob(metadata));
+                //(document.getElementById('inputRegion') as HTMLInputElement).html = metadata;
+            } catch(e){
+              console.error("Error while processing metadata",e);
+            }
+
+
           }
+
 
           new AsyncScheduler().start(
               async (): Promise<void> => {
@@ -491,7 +503,7 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
         await this.endMeeting();
         this.leave();
         (buttonMeetingEnd as HTMLButtonElement).disabled = false;
-        // @ts-ignore
+        //@ts-ignore
         window.location = window.location.pathname;
       });
     });
@@ -921,14 +933,43 @@ export class DemoMeetingApp implements AudioVideoObserver, DeviceChangeObserver,
       //this.region = this.region || 'ap-south-1';
       //Force the region as ap-south-1
       this.region = 'ap-south-1';
-    const response = await fetch(
-      `${DemoMeetingApp.BASE_URL}join?title=${encodeURIComponent(this.meeting)}&name=${encodeURIComponent(this.name)}&region=${encodeURIComponent(this.region)}`,
-      {
-        method: 'POST',
+
+    //   const response = await fetch(
+    //   `${DemoMeetingApp.BASE_URL}join?title=${encodeURIComponent(this.meeting)}&name=${encodeURIComponent(this.name)}&region=${encodeURIComponent(this.region)}`,
+    //   {
+    //     method: 'POST',
+    //   }
+    // );
+
+      let request =  <any>{ title:'',  name:'', region:''};
+      request.title=this.meeting;
+      request.name=this.name;
+      request.region = this.region;
+
+      if(!!this.meetingMetadata && this.meetingMetadata.data != null){
+        request = {...request, ...this.meetingMetadata.data}
       }
-    );
-    const json = await response.json();
+
+      console.log(request);
+
+
+
+      const response = await fetch(
+          `${DemoMeetingApp.SS_CORE_BASE_URL}join`,
+          {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body : JSON.stringify(request)
+          }
+      );
+
+
+      console.log(response);
+      const json = await response.json();
     if (json.error) {
+      console.error(json.error)
       throw new Error(`Server error: ${json.error}`);
     }
     return json;

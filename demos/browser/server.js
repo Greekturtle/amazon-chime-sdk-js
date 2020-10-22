@@ -91,7 +91,8 @@ http.createServer({}, async (request, response) => {
             // For internal debugging - ignore this.
             responseStatus = 201;
             respond(response, 201, 'application/json', JSON.stringify(require('./debug.js').debug(requestUrl.query), null, 2));
-        } else if (request.method === 'POST' && requestUrl.pathname === '/join') {
+        }
+        else if (request.method === 'POST' && requestUrl.pathname === '/join') {
             if (!requestUrl.query.title || !requestUrl.query.name || !requestUrl.query.region) {
                 throw new Error('Need parameters: title, name, region');
             }
@@ -114,6 +115,10 @@ http.createServer({}, async (request, response) => {
             // Fetch the meeting info
             const meeting = meetingTable[requestUrl.query.title];
 
+            if (!meetingTable[requestUrl.query.host_org_code]) {
+                await chime.tagMeeting()
+            }
+
             // Create new attendee for the meeting
             const attendee = await chime.createAttendee({
                 // The meeting ID of the created meeting to add the attendee to
@@ -134,13 +139,15 @@ http.createServer({}, async (request, response) => {
                     Attendee: attendee,
                 },
             }, null, 2));
-        } else if (request.method === 'POST' && requestUrl.pathname === '/end') {
+        }
+        else if (request.method === 'POST' && requestUrl.pathname === '/end') {
             // End the meeting. All attendee connections will hang up.
             await chime.deleteMeeting({
                 MeetingId: meetingTable[requestUrl.query.title].Meeting.MeetingId,
             }).promise();
             respond(response, 200, 'application/json', JSON.stringify({}));
-        } else {
+        }
+        else {
             responseStatus = 404;
             respond(response, 404, 'text/html', '404 Not Found');
         }
