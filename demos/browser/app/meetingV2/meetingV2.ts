@@ -27,10 +27,10 @@ import {
   EventAttributes,
   LogLevel,
   Logger,
-  MultiLogger,
+  //MultiLogger,
   MeetingSession,
   MeetingSessionConfiguration,
-//  MeetingSessionPOSTLogger,
+ MeetingSessionPOSTLogger,
   MeetingSessionStatus,
   MeetingSessionStatusCode,
   MeetingSessionVideoAvailability,
@@ -177,7 +177,7 @@ export class DemoMeetingApp implements
   ContentShareObserver {
   static readonly DID: string = '+17035550122';
   static readonly BASE_URL: string = [location.protocol, '//', location.host, location.pathname.replace(/\/*$/, '/').replace('/v2', '')].join('');
-    static readonly SS_CORE_BASE_URL: string = [location.protocol, '//',location.host,'/tnpsuite-core/oculus/meetings/'].join('');
+    static readonly SS_CORE_BASE_URL: string = [location.protocol, '//',location.host.replace(':8895',''),'/tnpsuite-core/oculus/meetings/'].join('');
   static testVideo: string = 'https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Big_Buck_Bunny_4K.webm/Big_Buck_Bunny_4K.webm.360p.vp9.webm';
   static readonly LOGGER_BATCH_SIZE: number = 85;
   static readonly LOGGER_INTERVAL_MS: number = 2000;
@@ -217,6 +217,7 @@ export class DemoMeetingApp implements
     'button-content-share': false,
     'button-pause-content-share': false,
     'button-video-stats': false,
+      'button-raise-hand': false
   };
 
   contentShareType: ContentShareType = ContentShareType.ScreenCapture;
@@ -640,6 +641,31 @@ export class DemoMeetingApp implements
       this.toggleButton('button-video-stats');
     });
 
+      const buttonRaiseHand = document.getElementById('button-raise-hand');
+      buttonRaiseHand.addEventListener('click', () => {
+          if (this.isButtonOn('button-raise-hand')) {
+              sendCustomMessage('action:hand-down')
+          } else {
+              sendCustomMessage('action:hand-up')
+          }
+          this.toggleButton('button-raise-hand');
+      });
+
+
+      const sendCustomMessage = (message :string) => {
+          new AsyncScheduler().start(() => {
+
+              this.audioVideo.realtimeSendDataMessage(DemoMeetingApp.DATA_MESSAGE_TOPIC, message, DemoMeetingApp.DATA_MESSAGE_LIFETIME_MS);
+              // echo the message to the handler
+              this.dataMessageHandler(new DataMessage(
+                  Date.now(),
+                  DemoMeetingApp.DATA_MESSAGE_TOPIC,
+                  new TextEncoder().encode(message),
+                  this.meetingSession.configuration.credentials.attendeeId,
+                  this.meetingSession.configuration.credentials.externalUserId
+              ));
+          });
+      };
     const sendMessage = () => {
       new AsyncScheduler().start(() => {
         const textArea = document.getElementById('send-message') as HTMLTextAreaElement;
@@ -1255,6 +1281,24 @@ export class DemoMeetingApp implements
   }
 
   dataMessageHandler(dataMessage: DataMessage): void {
+
+    let senderOverride = null;
+    let messageOverride = null;
+
+    try{
+        if(dataMessage.text().indexOf('action')== 0){
+          console.log(dataMessage.text());
+            senderOverride = 'Oculus';
+            const action = dataMessage.text().split(':').slice(-1)[0];
+
+            messageOverride = (dataMessage.senderExternalUserId.split('#').slice(-1)[0])+' '+(action == 'hand-up'? 'raised their hand hand':'put their hand down');
+
+          //return;
+        }
+    } catch(e){
+
+    }
+
     if (!dataMessage.throttled) {
       const isSelf = dataMessage.senderAttendeeId === this.meetingSession.configuration.credentials.attendeeId;
       if (dataMessage.timestampMs <= this.lastReceivedMessageTimestamp) {
@@ -1263,11 +1307,15 @@ export class DemoMeetingApp implements
       this.lastReceivedMessageTimestamp = dataMessage.timestampMs;
       const messageDiv = document.getElementById('receive-message') as HTMLDivElement;
       const messageNameSpan = document.createElement('div') as HTMLDivElement;
+
       messageNameSpan.classList.add('message-bubble-sender');
-      messageNameSpan.innerText = (dataMessage.senderExternalUserId.split('#').slice(-1)[0]);
+      messageNameSpan.innerText = senderOverride || (dataMessage.senderExternalUserId.split('#').slice(-1)[0]);
+
       const messageTextSpan = document.createElement('div') as HTMLDivElement;
+
       messageTextSpan.classList.add(isSelf ? 'message-bubble-self' : 'message-bubble-other');
-      messageTextSpan.innerHTML = this.markdown.render(dataMessage.text()).replace(/[<]a /g, '<a target="_blank" ');
+      messageTextSpan.innerHTML = messageOverride || this.markdown.render(dataMessage.text()).replace(/[<]a /g, '<a target="_blank" ');
+
       const appendClass = (element: HTMLElement, className: string) => {
         for (let i = 0; i < element.children.length; i++) {
           const child = element.children[i] as HTMLElement;
@@ -1275,10 +1323,12 @@ export class DemoMeetingApp implements
           appendClass(child, className);
         }
       }
+
       appendClass(messageTextSpan, 'markdown');
       if (this.lastMessageSender !== dataMessage.senderAttendeeId) {
         messageDiv.appendChild(messageNameSpan);
       }
+
       this.lastMessageSender = dataMessage.senderAttendeeId;
       messageDiv.appendChild(messageTextSpan);
       messageDiv.scrollTop = messageDiv.scrollHeight;
@@ -1316,6 +1366,7 @@ export class DemoMeetingApp implements
       }
 
       console.log(request);
+      console.log(`${DemoMeetingApp.SS_CORE_BASE_URL}join`);
 
 
 
@@ -2014,7 +2065,7 @@ export class DemoMeetingApp implements
     const tileElement = document.getElementById(`tile-${tileIndex}`) as HTMLDivElement;
     const videoElement = document.getElementById(`video-${tileIndex}`) as HTMLVideoElement;
     const nameplateElement = document.getElementById(`nameplate-${tileIndex}`) as HTMLDivElement;
-    const attendeeIdElement = document.getElementById(`attendeeid-${tileIndex}`) as HTMLDivElement;
+    //const attendeeIdElement = document.getElementById(`attendeeid-${tileIndex}`) as HTMLDivElement;
     const pauseButtonElement = document.getElementById(`video-pause-${tileIndex}`) as HTMLButtonElement;
 
     pauseButtonElement.addEventListener('click', () => {
@@ -2031,8 +2082,9 @@ export class DemoMeetingApp implements
     this.audioVideo.bindVideoElement(tileState.tileId, videoElement);
     this.tileIndexToTileId[tileIndex] = tileState.tileId;
     this.tileIdToTileIndex[tileState.tileId] = tileIndex;
+    console.log(tileState);
     this.updateProperty(nameplateElement, 'innerText', tileState.boundExternalUserId.split('#')[1]);
-    this.updateProperty(attendeeIdElement, 'innerText', tileState.boundAttendeeId);
+    //this.updateProperty(attendeeIdElement, 'innerText', tileState.boundAttendeeId);
     this.showTile(tileElement, tileState);
     this.updateGridClasses();
     this.layoutFeaturedTile();
@@ -2050,7 +2102,7 @@ export class DemoMeetingApp implements
     this.log(`video availability changed: canStartLocalVideo  ${availability.canStartLocalVideo}`);
   }
 
-  showTile(tileElement: HTMLDivElement, tileState: VideoTileState) {
+    showTile(tileElement: HTMLDivElement, tileState: VideoTileState) {
     tileElement.classList.add(`active`);
 
     if (tileState.isContent) {
