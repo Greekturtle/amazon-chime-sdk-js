@@ -1242,7 +1242,6 @@ export class DemoMeetingApp implements AudioVideoObserver,
             const handStatus = entries[i].getElementsByTagName('span')[0];
 
             handStatus.className = 'col-1';
-            spanStatus.className = '';
             spanName.className = 'col-5';
             spanSignalStrength.className = '';
 
@@ -1275,7 +1274,7 @@ export class DemoMeetingApp implements AudioVideoObserver,
             }
 
 
-            this.updateProperty(spanStatus, 'className', spanStatus.className+' '+statusClass);
+            this.updateProperty(spanStatus, 'className', statusClass);
             if (this.isRecorder()) {
                 this.updateProperty(spanSignalStrength, 'innerText', this.roster[attendeeId].signalStrength);
                 this.updateProperty(spanSignalStrength, 'className', 'small');
