@@ -1414,7 +1414,7 @@ export class DemoMeetingApp implements AudioVideoObserver,
                 senderOverride = 'Oculus';
                 const action = dataMessage.text().split(':').slice(-1)[0];
 
-                messageOverride = (dataMessage.senderExternalUserId.split('#').slice(-1)[0]) + ' ' + (action == 'hand-up' ? 'raised their hand hand' : 'put their hand down');
+                messageOverride = (dataMessage.senderExternalUserId.split('#').slice(-1)[0]) + ' ' + (action == 'hand-up' ? 'raised their hand' : 'put their hand down');
 
                 let that = this;
                 setTimeout(async () =>{
