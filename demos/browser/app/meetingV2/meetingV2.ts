@@ -190,6 +190,8 @@ export class DemoMeetingApp implements AudioVideoObserver,
 
     static readonly OCULUS_ACTIONS_DB: string = "oculus_actions_db";
 
+    static readonly OCULUS_ATTENDEES_COLLECTION: string = "attendees";
+
     showActiveSpeakerScores = false;
     activeSpeakerLayout = true;
     meeting: string | null = null;
@@ -254,6 +256,9 @@ export class DemoMeetingApp implements AudioVideoObserver,
     analyserNode: RemovableAnalyserNode;
 
 
+    attendeeActionsMap: {[key: string] : any} = {};
+
+
 
     constructor() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -262,6 +267,7 @@ export class DemoMeetingApp implements AudioVideoObserver,
             "amazon-chime-sdk-js@" + Versioning.sdkVersion;
         this.initEventListeners();
         this.initParameters();
+        this.initFirebase();
         this.setMediaRegion();
         this.setUpVideoTileElementResizer();
         if (this.isRecorder() || this.isBroadcaster()) {
@@ -298,6 +304,38 @@ export class DemoMeetingApp implements AudioVideoObserver,
             console.error(error);
         });
 
+    }
+
+    async fetchAttendeeActionStatus():  Promise<any> {
+
+        return new Promise(async (resolve,reject) => {
+            const db = firebase.firestore();
+
+            const meetingId = this.meetingSession.configuration.meetingId;
+            let map = this.attendeeActionsMap;
+
+            try {
+                await db.collection(DemoMeetingApp.OCULUS_ACTIONS_DB)
+                    .doc('meeting_' + meetingId)
+                    .collection(DemoMeetingApp.OCULUS_ATTENDEES_COLLECTION)
+                    .get().then(function (querySnapshot) {
+                        let docs = <any>[];
+                        querySnapshot.forEach(function (doc) {
+
+                            let attendee = doc.data()
+                            docs.push(doc.data());
+                            map[doc.id] = attendee;
+                        });
+                        resolve(docs);
+                    })
+                    .catch(function (error) {
+                        console.error(error);
+                        reject(error)
+                    });
+            } catch (e) {
+                console.error(`Error while fething attendee status from firebase`,e);
+            }
+        });
     }
 
 
@@ -671,21 +709,19 @@ export class DemoMeetingApp implements AudioVideoObserver,
         });
 
         const buttonRaiseHand = document.getElementById('button-raise-hand');
-        buttonRaiseHand.addEventListener('click', () => {
-            if (this.isButtonOn('button-raise-hand')) {
-                sendCustomMessage('action:hand-down')
+        buttonRaiseHand.addEventListener('click', async() => {
 
-                const db = firebase.firestore();
-                db.collection(DemoMeetingApp.OCULUS_ACTIONS_DB).doc()
-                //const attendeeId = this.meetingSession.configuration.credentials.attendeeId;
-                console.log(this.meetingSession.configuration)
-                //const externalUserId = this.meetingSession.configuration.credentials.externalUserId;
+            let handStatus = this.isButtonOn('button-raise-hand') ? 'down' : 'up';
+            sendCustomMessage('action:hand-'+handStatus)
+            await this.saveHandStatusToDb(handStatus);
+            let that = this;
+            setTimeout(async () =>{
+                await that.fetchAttendeeActionStatus();
+                setTimeout(async () =>{
+                    that.updateRoster();
+                },2000)
 
-                //let data = <any>{ attendeeId }
-
-            } else {
-                sendCustomMessage('action:hand-up')
-            }
+            },5000);
             this.toggleButton('button-raise-hand');
         });
 
@@ -764,6 +800,26 @@ export class DemoMeetingApp implements AudioVideoObserver,
                 (buttonMeetingLeave as HTMLButtonElement).disabled = false;
             });
         });
+    }
+
+    private async saveHandStatusToDb(handStatus: string) {
+        const attendeeId = this.meetingSession.configuration.credentials.attendeeId;
+        const meetingId = this.meetingSession.configuration.meetingId;
+        const externalUserId = this.meetingSession.configuration.credentials.externalUserId;
+
+        let data = <any>{attendeeId: attendeeId, externalUserId: externalUserId, handStatus: handStatus}
+
+        const db = firebase.firestore();
+
+        try {
+            await db.collection(DemoMeetingApp.OCULUS_ACTIONS_DB)
+                .doc('meeting_' + meetingId)
+                .collection(DemoMeetingApp.OCULUS_ATTENDEES_COLLECTION)
+                .doc(attendeeId)
+                .set(data);
+        } catch (e) {
+            console.error(`Error while saving hand ${handStatus} status to `);
+        }
     }
 
     getSupportedMediaRegions(): Array<string> {
@@ -1125,7 +1181,13 @@ export class DemoMeetingApp implements AudioVideoObserver,
         console.log('>>>>> Joining meeting now')
         await this.openAudioInputFromSelection();
         await this.openAudioOutputFromSelection();
+
+        //Start interval of fetching meeting attendee statuses
+         setInterval(async () => {
+            await this.fetchAttendeeActionStatus();
+        },30000)
         this.audioVideo.start();
+         this.saveHandStatusToDb('down');
     }
 
     leave(): void {
@@ -1158,7 +1220,8 @@ export class DemoMeetingApp implements AudioVideoObserver,
         const newRosterCount = Object.keys(this.roster).length;
         while (roster.getElementsByTagName('li').length < newRosterCount) {
             const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.className = 'list-group-item d-flex row  align-items-center';
+            li.appendChild(document.createElement('span'));
             li.appendChild(document.createElement('span'));
             li.appendChild(document.createElement('span'));
             li.appendChild(document.createElement('span'));
@@ -1167,12 +1230,24 @@ export class DemoMeetingApp implements AudioVideoObserver,
         while (roster.getElementsByTagName('li').length > newRosterCount) {
             roster.removeChild(roster.getElementsByTagName('li')[0]);
         }
+
+        console.log(this.attendeeActionsMap);
+
         const entries = roster.getElementsByTagName('li');
         let i = 0;
         for (const attendeeId in this.roster) {
-            const spanName = entries[i].getElementsByTagName('span')[0];
-            const spanSignalStrength = entries[i].getElementsByTagName('span')[1];
-            const spanStatus = entries[i].getElementsByTagName('span')[2];
+            const spanName = entries[i].getElementsByTagName('span')[1];
+            const spanSignalStrength = entries[i].getElementsByTagName('span')[2];
+            const spanStatus = entries[i].getElementsByTagName('span')[3];
+            const handStatus = entries[i].getElementsByTagName('span')[0];
+
+            handStatus.className = 'col-1';
+            spanStatus.className = '';
+            spanName.className = 'col-5';
+            spanSignalStrength.className = '';
+
+
+
             let statusClass = 'badge badge-pill ';
             let statusText = '\xa0'; // &nbsp
             if (this.roster[attendeeId].signalStrength < 1) {
@@ -1191,7 +1266,16 @@ export class DemoMeetingApp implements AudioVideoObserver,
             //console.log('roster attendee',this.roster[attendeeId]);
             this.updateProperty(spanName, 'innerText', this.roster[attendeeId].name);
             this.updateProperty(spanStatus, 'innerText', statusText);
-            this.updateProperty(spanStatus, 'className', statusClass);
+
+            if(!!this.attendeeActionsMap[attendeeId] && this.attendeeActionsMap[attendeeId].handStatus =='up'){
+                //Show
+                this.updateProperty(handStatus, 'innerHTML', '<img src="https://joinsuperset.com/img/hand-up.png" style="width:25px">');
+            } else {
+                this.updateProperty(handStatus, 'innerHTML', '');
+            }
+
+
+            this.updateProperty(spanStatus, 'className', spanStatus.className+' '+statusClass);
             if (this.isRecorder()) {
                 this.updateProperty(spanSignalStrength, 'innerText', this.roster[attendeeId].signalStrength);
                 this.updateProperty(spanSignalStrength, 'className', 'small');
@@ -1319,7 +1403,7 @@ export class DemoMeetingApp implements AudioVideoObserver,
         });
     }
 
-    dataMessageHandler(dataMessage: DataMessage): void {
+    async dataMessageHandler(dataMessage: DataMessage): Promise<any> {
 
         let senderOverride = null;
         let messageOverride = null;
@@ -1331,6 +1415,15 @@ export class DemoMeetingApp implements AudioVideoObserver,
                 const action = dataMessage.text().split(':').slice(-1)[0];
 
                 messageOverride = (dataMessage.senderExternalUserId.split('#').slice(-1)[0]) + ' ' + (action == 'hand-up' ? 'raised their hand hand' : 'put their hand down');
+
+                let that = this;
+                setTimeout(async () =>{
+                    await that.fetchAttendeeActionStatus();
+                    setTimeout(async () =>{
+                        that.updateRoster();
+                    },2000)
+
+                },6000);
 
                 //return;
             }
